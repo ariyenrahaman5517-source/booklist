@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BookList — Linked List Book Record Manager</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    .font-mono-code {
+      font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+    }
+    @keyframes pulseRing {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.35); }
+      50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+    }
+    .node-match {
+      animation: pulseRing 1.6s ease-in-out infinite;
+    }
+    .chain-scroll::-webkit-scrollbar { height: 8px; }
+    .chain-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 9999px; }
+    .chain-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    .chain-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-9 h-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <h1 class="text-base sm:text-lg font-bold text-slate-900 truncate">BookList</h1>
+          <p class="text-xs text-slate-500 truncate hidden sm:block">Singly Linked List Book Record Manager</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 shrink-0">
+        <button id="btnResetSample" type="button" class="px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Load Sample</button>
+        <button id="btnClearList" type="button" class="px-3 py-1.5 text-xs sm:text-sm font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors">Clear All</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Nodes</p>
+        <p id="statSize" class="mt-1 text-2xl font-bold text-slate-900 font-mono-code">0</p>
+      </div>
+      <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm min-w-0">
+        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">HEAD Pointer</p>
+        <p id="statHead" class="mt-1 text-sm sm:text-base font-semibold text-indigo-700 truncate font-mono-code">NULL</p>
+      </div>
+      <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm min-w-0">
+        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">TAIL Node</p>
+        <p id="statTail" class="mt-1 text-sm sm:text-base font-semibold text-slate-800 truncate font-mono-code">NULL</p>
+      </div>
+      <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm min-w-0">
+        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Last Operation</p>
+        <p id="statLastOp" class="mt-1 text-xs sm:text-sm font-medium text-emerald-700 truncate">Initialized</p>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="border-b border-slate-200 bg-slate-50/70 px-4 pt-3 flex flex-wrap gap-2" role="tablist">
+        <button type="button" data-tab="insert" class="op-tab px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-indigo-600 text-indigo-700 bg-white transition-colors">+ Insert Book</button>
+        <button type="button" data-tab="search" class="op-tab px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 border-transparent text-slate-600 hover:text-slate-900 transition-colors">Search Book</button>
+        <button type="button" data-tab="delete" class="op-tab px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 border-transparent text-slate-600 hover:text-slate-900 transition-colors">Delete Book</button>
+      </div>
+
+      <div class="p-4 sm:p-6">
+        <form id="formInsert" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+            <div class="lg:col-span-1">
+              <label for="inputBookId" class="block text-xs font-semibold text-slate-700 mb-1">Book ID *</label>
+              <input id="inputBookId" type="number" min="1" required placeholder="e.g. 105" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono-code" />
+            </div>
+            <div class="sm:col-span-2 lg:col-span-2">
+              <label for="inputTitle" class="block text-xs font-semibold text-slate-700 mb-1">Book Title *</label>
+              <input id="inputTitle" type="text" required placeholder="e.g. The Pragmatic Programmer" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+            <div class="lg:col-span-1">
+              <label for="inputAuthor" class="block text-xs font-semibold text-slate-700 mb-1">Author *</label>
+              <input id="inputAuthor" type="text" required placeholder="e.g. Andrew Hunt" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+            <div class="lg:col-span-1">
+              <label for="inputGenre" class="block text-xs font-semibold text-slate-700 mb-1">Genre</label>
+              <select id="inputGenre" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="Computer Science">Computer Science</option>
+                <option value="Fiction">Fiction</option>
+                <option value="Science">Science</option>
+                <option value="History">History</option>
+                <option value="Biography">Biography</option>
+                <option value="Philosophy">Philosophy</option>
+              </select>
+            </div>
+            <div class="lg:col-span-1">
+              <label for="inputYear" class="block text-xs font-semibold text-slate-700 mb-1">Year</label>
+              <input id="inputYear" type="number" min="1000" max="2099" value="2024" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono-code" />
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-2 border-t border-slate-100">
+            <div class="flex flex-wrap items-center gap-3">
+              <div>
+                <label for="insertMode" class="block text-xs font-semibold text-slate-700 mb-1">Insertion Position</label>
+                <select id="insertMode" class="px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  <option value="tail">At Tail — O(n)</option>
+                  <option value="head">At Head — O(1)</option>
+                  <option value="index">At Specific Index — O(n)</option>
+                </select>
+              </div>
+              <div id="insertIndexWrap" class="hidden">
+                <label for="insertIndex" class="block text-xs font-semibold text-slate-700 mb-1">Index (0 to <span id="maxIndexHint">0</span>)</label>
+                <input id="insertIndex" type="number" min="0" value="0" class="w-28 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono-code" />
+              </div>
+            </div>
+            <button type="submit" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors shrink-0">Insert Node</button>
+          </div>
+        </form>
+
+        <form id="formSearch" class="hidden space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end">
+            <div class="sm:col-span-3">
+              <label for="searchField" class="block text-xs font-semibold text-slate-700 mb-1">Search By</label>
+              <select id="searchField" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="title">Title (Partial Match)</option>
+                <option value="id">Book ID (Exact)</option>
+                <option value="author">Author (Partial Match)</option>
+              </select>
+            </div>
+            <div class="sm:col-span-6">
+              <label for="searchQuery" class="block text-xs font-semibold text-slate-700 mb-1">Query</label>
+              <input id="searchQuery" type="text" required placeholder="Enter book title, ID, or author..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+            <div class="sm:col-span-3 flex gap-2">
+              <button type="submit" class="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors">Traverse &amp; Search</button>
+              <button id="btnClearSearch" type="button" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg transition-colors">Reset</button>
+            </div>
+          </div>
+          <div id="searchResultBanner" class="hidden rounded-lg p-3 text-sm border"></div>
+        </form>
+
+        <form id="formDelete" class="hidden space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end">
+            <div class="sm:col-span-4">
+              <label for="deleteMode" class="block text-xs font-semibold text-slate-700 mb-1">Deletion Method</label>
+              <select id="deleteMode" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-rose-500">
+                <option value="id">By Book ID</option>
+                <option value="head">Delete Head Node — O(1)</option>
+                <option value="tail">Delete Tail Node — O(n)</option>
+                <option value="index">By Node Index (0-based)</option>
+              </select>
+            </div>
+            <div id="deleteValueWrap" class="sm:col-span-5">
+              <label id="deleteValueLabel" for="deleteValue" class="block text-xs font-semibold text-slate-700 mb-1">Book ID to Delete</label>
+              <input id="deleteValue" type="number" min="0" placeholder="e.g. 102" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 font-mono-code" />
+            </div>
+            <div class="sm:col-span-3">
+              <button type="submit" class="w-full px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors">Delete Node</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-6 space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">Linked List Structure (HEAD → NULL)</h2>
+          <p class="text-xs text-slate-500">Each node stores book data and a <code class="font-mono-code text-indigo-600 bg-indigo-50 px-1 rounded">next</code> pointer to the following node.</p>
+        </div>
+        <div class="flex items-center gap-3 text-xs text-slate-600">
+          <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span> HEAD</span>
+          <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Search Match</span>
+          <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> Traversed</span>
+        </div>
+      </div>
+      <div id="linkedListCanvas" class="chain-scroll flex items-center gap-2 overflow-x-auto py-4 px-2 min-h-[176px] bg-slate-50/70 rounded-xl border border-dashed border-slate-300"></div>
+    </section>
+
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+        <div class="px-4 sm:px-6 py-4 border-b border-slate-200 flex items-center justify-between gap-2">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Book Records Directory</h2>
+            <p class="text-xs text-slate-500">Sequential traversal display from <span class="font-mono-code">HEAD</span></p>
+          </div>
+          <span id="tableCountBadge" class="px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-700 rounded-full">0 Books</span>
+        </div>
+        <div class="overflow-x-auto flex-1">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                <th class="py-3 px-4">Idx</th>
+                <th class="py-3 px-4">ID</th>
+                <th class="py-3 px-4">Title &amp; Author</th>
+                <th class="py-3 px-4 hidden sm:table-cell">Genre</th>
+                <th class="py-3 px-4 hidden md:table-cell">Year</th>
+                <th class="py-3 px-4">Next Ptr</th>
+                <th class="py-3 px-4 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="bookTableBody" class="divide-y divide-slate-100 text-sm"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+        <div class="px-4 sm:px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Pointer Trace Log</h2>
+            <p class="text-xs text-slate-500">Step-by-step list mutations</p>
+          </div>
+          <button id="btnClearLog" type="button" class="text-xs font-medium text-slate-500 hover:text-slate-800">Clear Log</button>
+        </div>
+        <ul id="opLogList" class="divide-y divide-slate-100 max-h-80 overflow-y-auto p-2 space-y-1 text-xs"></ul>
+      </div>
+    </section>
+  </main>
+
+  <div id="confirmModal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-sm w-full p-6 shadow-xl border border-slate-200 space-y-4">
+      <h3 class="text-base font-bold text-slate-900">Clear Entire Linked List?</h3>
+      <p class="text-sm text-slate-600">This will set <code class="font-mono-code text-rose-600">HEAD = NULL</code> and remove all current book nodes from the list.</p>
+      <div class="flex justify-end gap-2 pt-2">
+        <button id="btnCancelClear" type="button" class="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Cancel</button>
+        <button id="btnConfirmClear" type="button" class="px-4 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors">Yes, Clear List</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="hidden fixed bottom-5 right-5 z-50 max-w-sm px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white transition-all"></div>
+
+  <script>
+    class BookNode {
+      constructor({ id, title, author, genre, year }) {
+        this.id = Number(id);
+        this.title = title.trim();
+        this.author = author.trim();
+        this.genre = genre || 'General';
+        this.year = Number(year) || new Date().getFullYear();
+        this.next = null;
+      }
+    }
+
+    class BookLinkedList {
+      constructor() {
+        this.head = null;
+        this.size = 0;
+      }
+
+      hasId(id) {
+        let curr = this.head;
+        while (curr !== null) {
+          if (curr.id === Number(id)) return true;
+          curr = curr.next;
+        }
+        return false;
+      }
+
+      insertAtHead(bookData) {
+        if (this.hasId(bookData.id)) return { ok: false, error: `Book ID #${bookData.id} already exists.` };
+        const newNode = new BookNode(bookData);
+        newNode.next = this.head;
+        this.head = newNode;
+        this.size++;
+        return { ok: true, steps: 1, node: newNode };
+      }
+
+      insertAtTail(bookData) {
+        if (this.hasId(bookData.id)) return { ok: false, error: `Book ID #${bookData.id} already exists.` };
+        const newNode = new BookNode(bookData);
+        let steps = 1;
+        if (this.head === null) {
+          this.head = newNode;
+        } else {
+          let curr = this.head;
+          while (curr.next !== null) {
+            curr = curr.next;
+            steps++;
+          }
+          curr.next = newNode;
+        }
+        this.size++;
+        return { ok: true, steps, node: newNode };
+      }
+
+      insertAtPosition(bookData, index) {
+        if (this.hasId(bookData.id)) return { ok: false, error: `Book ID #${bookData.id} already exists.` };
+        if (index < 0 || index > this.size) return { ok: false, error: `Index ${index} out of bounds (0 to ${this.size}).` };
+        if (index === 0) return this.insertAtHead(bookData);
+        const newNode = new BookNode(bookData);
+        let curr = this.head;
+        let steps = 1;
+        for (let i = 0; i < index - 1; i++) {
+          curr = curr.next;
+          steps++;
+        }
+        newNode.next = curr.next;
+        curr.next = newNode;
+        this.size++;
+        return { ok: true, steps, node: newNode };
+      }
+
+      search(field, query) {
+        const matches = [];
+        const traversed = [];
+        let curr = this.head;
+        let index = 0;
+        while (curr !== null) {
+          traversed.push({ index, node: curr });
+          let matched = false;
+          if (field === 'id') matched = curr.id === Number(query);
+          if (field === 'title') matched = curr.title.toLowerCase().includes(query.toLowerCase().trim());
+          if (field === 'author') matched = curr.author.toLowerCase().includes(query.toLowerCase().trim());
+          if (matched) matches.push({ index, node: curr });
+          curr = curr.next;
+          index++;
+        }
+        return { matches, traversed };
+      }
+
+      deleteById(id) {
+        if (this.head === null) return { ok: false, error: 'The list is empty.' };
+        if (this.head.id === Number(id)) return this.deleteHead();
+        let curr = this.head;
+        let steps = 1;
+        while (curr.next !== null && curr.next.id !== Number(id)) {
+          curr = curr.next;
+          steps++;
+        }
+        if (curr.next === null) return { ok: false, error: `Book ID #${id} not found.` };
+        const removed = curr.next;
+        curr.next = removed.next;
+        this.size--;
+        return { ok: true, steps, node: removed };
+      }
+
+      deleteHead() {
+        if (this.head === null) return { ok: false, error: 'The list is empty.' };
+        const removed = this.head;
+        this.head = this.head.next;
+        this.size--;
+        return { ok: true, steps: 1, node: removed };
+      }
+
+      deleteTail() {
+        if (this.head === null) return { ok: false, error: 'The list is empty.' };
+        if (this.head.next === null) return this.deleteHead();
+        let curr = this.head;
+        let steps = 1;
+        while (curr.next.next !== null) {
+          curr = curr.next;
+          steps++;
+        }
+        const removed = curr.next;
+        curr.next = null;
+        this.size--;
+        return { ok: true, steps, node: removed };
+      }
+
+      deleteAtIndex(index) {
+        if (index < 0 || index >= this.size) return { ok: false, error: `Index ${index} out of bounds (0 to ${this.size - 1}).` };
+        if (index === 0) return this.deleteHead();
+        let curr = this.head;
+        let steps = 1;
+        for (let i = 0; i < index - 1; i++) {
+          curr = curr.next;
+          steps++;
+        }
+        const removed = curr.next;
+        curr.next = removed.next;
+        this.size--;
+        return { ok: true, steps, node: removed };
+      }
+
+      clear() {
+        this.head = null;
+        this.size = 0;
+      }
+
+      toArray() {
+        const arr = [];
+        let curr = this.head;
+        let index = 0;
+        while (curr !== null) {
+          arr.push({ index, node: curr });
+          curr = curr.next;
+          index++;
+        }
+        return arr;
+      }
+    }
+
+    const bookList = new BookLinkedList();
+    let highlightMatches = new Set();
+    let highlightTraversed = new Set();
+    let logs = [];
+
+    const $ = id => document.getElementById(id);
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function addLog(message, type = 'normal') {
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      logs.unshift({ time, message, type });
+      if (logs.length > 100) logs.pop();
+      renderLogs();
+    }
+
+    function setLastOperation(message) {
+      $('statLastOp').textContent = message;
+      $('statLastOp').className = 'mt-1 text-xs sm:text-sm font-medium text-emerald-700 truncate';
+    }
+
+    function showToast(message, tone = 'indigo') {
+      const toast = $('toast');
+      toast.textContent = message;
+      toast.className = `fixed bottom-5 right-5 z-50 max-w-sm px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white transition-all ${tone === 'rose' ? 'bg-rose-600' : tone === 'emerald' ? 'bg-emerald-600' : 'bg-indigo-600'}`;
+      toast.classList.remove('hidden');
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toast.classList.add('hidden'), 2800);
+    }
+
+    function renderLogs() {
+      $('opLogList').innerHTML = logs.length
+        ? logs.map(log => {
+            const color = log.type === 'error' ? 'text-rose-700 bg-rose-50' : log.type === 'success' ? 'text-emerald-700 bg-emerald-50' : 'text-slate-700 bg-slate-50';
+            return `<li class="px-3 py-2 rounded-lg ${color} flex gap-2"><span class="font-mono-code text-slate-400 shrink-0">${log.time}</span><span>${escapeHtml(log.message)}</span></li>`;
+          }).join('')
+        : '<li class="px-3 py-8 text-center text-slate-400">No operations logged yet.</li>';
+    }
+
+    function renderCanvas() {
+      const canvas = $('linkedListCanvas');
+      const arr = bookList.toArray();
+
+      if (arr.length === 0) {
+        canvas.innerHTML = '<div class="w-full flex flex-col items-center justify-center text-slate-400"><div class="text-2xl mb-2">∅</div><p class="text-sm font-medium">List is empty — HEAD points to NULL</p></div>';
+        return;
+      }
+
+      let html = '<div class="shrink-0 flex flex-col items-center mr-1"><span class="text-[10px] font-bold text-indigo-700 mb-1">HEAD</span><div class="w-12 h-16 rounded-lg border-2 border-indigo-600 bg-indigo-50 flex items-center justify-center text-xs font-bold text-indigo-700 font-mono-code">PTR</div></div><span class="text-slate-400 shrink-0 text-xl">→</span>';
+
+      arr.forEach(({ index, node }) => {
+        const isMatch = highlightMatches.has(index);
+        const isTraversed = highlightTraversed.has(index);
+        const matchClass = isMatch ? 'node-match border-emerald-500 bg-emerald-50' : isTraversed ? 'border-amber-400 bg-amber-50' : 'border-slate-300 bg-white';
+        html += `<div class="shrink-0 w-40 rounded-xl border-2 ${matchClass} shadow-sm p-3 text-xs transition-all">
+          <div class="flex items-center justify-between mb-2">
+            <span class="font-mono-code font-bold text-slate-800">NODE ${index}</span>
+            ${index === 0 ? '<span class="text-[9px] px-1.5 py-0.5 rounded-full bg-indigo-600 text-white font-bold">HEAD</span>' : ''}
+          </div>
+          <div class="space-y-1 min-w-0">
+            <p><span class="text-slate-400">ID:</span> <span class="font-mono-code font-semibold">${escapeHtml(node.id)}</span></p>
+            <p class="truncate font-semibold text-slate-800" title="${escapeHtml(node.title)}">${escapeHtml(node.title)}</p>
+            <p class="truncate text-slate-500">${escapeHtml(node.author)}</p>
+          </div>
+          <div class="mt-2 pt-2 border-t border-slate-200 flex justify-between items-center">
+            <span class="text-slate-400">next</span>
+            <span class="font-mono-code text-indigo-600">${node.next ? '→ PTR' : 'NULL'}</span>
+          </div>
+        </div>`;
+        html += '<span class="text-slate-400 shrink-0 text-xl">→</span>';
+      });
+
+      html += '<div class="shrink-0 px-3 py-2 rounded-lg border border-slate-300 bg-slate-100 text-xs font-mono-code font-bold text-slate-500">NULL</div>';
+      canvas.innerHTML = html;
+    }
+
+    function renderTable() {
+      const arr = bookList.toArray();
+      $('tableCountBadge').textContent = `${arr.length} ${arr.length === 1 ? 'Book' : 'Books'}`;
+      if (arr.length === 0) {
+        $('bookTableBody').innerHTML = '<tr><td colspan="7" class="py-12 text-center text-slate-400 text-sm">No book records. Load sample data or insert a new book.</td></tr>';
+        return;
+      }
+
+      $('bookTableBody').innerHTML = arr.map(({ index, node }) => `<tr class="${highlightMatches.has(index) ? 'bg-emerald-50' : ''}">
+        <td class="py-3 px-4 font-mono-code text-slate-500">${index}</td>
+        <td class="py-3 px-4 font-mono-code font-semibold text-indigo-700">#${escapeHtml(node.id)}</td>
+        <td class="py-3 px-4"><div class="font-medium text-slate-900">${escapeHtml(node.title)}</div><div class="text-xs text-slate-500">${escapeHtml(node.author)}</div></td>
+        <td class="py-3 px-4 hidden sm:table-cell"><span class="px-2 py-1 rounded-full bg-slate-100 text-slate-600 text-xs">${escapeHtml(node.genre)}</span></td>
+        <td class="py-3 px-4 hidden md:table-cell font-mono-code text-slate-600">${escapeHtml(node.year)}</td>
+        <td class="py-3 px-4 font-mono-code text-xs ${node.next ? 'text-indigo-600' : 'text-slate-400'}">${node.next ? `Node ${index + 1}` : 'NULL'}</td>
+        <td class="py-3 px-4 text-right"><button type="button" data-delete-id="${node.id}" class="text-xs font-medium text-rose-600 hover:text-rose-800">Delete</button></td>
+      </tr>`).join('');
+    }
+
+    function renderStats() {
+      $('statSize').textContent = bookList.size;
+      const tail = bookList.toArray().at(-1)?.node;
+      $('statHead').textContent = bookList.head ? `Node 0 / #${bookList.head.id}` : 'NULL';
+      $('statTail').textContent = tail ? `Node ${bookList.size - 1} / #${tail.id}` : 'NULL';
+      $('maxIndexHint').textContent = bookList.size;
+    }
+
+    function renderAll() {
+      renderStats();
+      renderCanvas();
+      renderTable();
+      renderLogs();
+    }
+
+    document.querySelectorAll('.op-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.op-tab').forEach(t => {
+          t.className = 'op-tab px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 border-transparent text-slate-600 hover:text-slate-900 transition-colors';
+        });
+        tab.className = 'op-tab px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-indigo-600 text-indigo-700 bg-white transition-colors';
+        ['insert', 'search', 'delete'].forEach(name => $(name === 'insert' ? 'formInsert' : name === 'search' ? 'formSearch' : 'formDelete').classList.toggle('hidden', name !== tab.dataset.tab));
+      });
+    });
+
+    $('insertMode').addEventListener('change', () => {
+      $('insertIndexWrap').classList.toggle('hidden', $('insertMode').value !== 'index');
+    });
+
+    $('formInsert').addEventListener('submit', event => {
+      event.preventEventDefault;
+    });
+
+    $('formInsert').addEventListener('submit', event => {
+      event.preventDefault();
+      const bookData = {
+        id: Number($('inputBookId').value),
+        title: $('inputTitle').value,
+        author: $('inputAuthor').value,
+        genre: $('inputGenre').value,
+        year: $('inputYear').value
+      };
+      const mode = $('insertMode').value;
+      let result;
+      if (mode === 'head') result = bookList.insertAtHead(bookData);
+      else if (mode === 'index') result = bookList.insertAtPosition(bookData, Number($('insertIndex').value));
+      else result = bookList.insertAtTail(bookData);
+
+      if (!result.ok) {
+        addLog(`Insert failed: ${result.error}`, 'error');
+        setLastOperation('Insert Failed');
+        showToast(result.error, 'rose');
+      } else {
+        highlightMatches = new Set();
+        highlightTraversed = new Set();
+        const position = mode === 'head' ? 'head' : mode === 'tail' ? 'tail' : `index ${$('insertIndex').value}`;
+        addLog(`Inserted #${bookData.id} "${bookData.title}" at ${position} (${result.steps} pointer step${result.steps === 1 ? '' : 's'}).`, 'success');
+        setLastOperation(`Inserted #${bookData.id}`);
+        showToast(`Book #${bookData.id} inserted`, 'emerald');
+        event.target.reset();
+        $('inputYear').value = '2024';
+      }
+      renderAll();
+    });
+
+    $('formSearch').addEventListener('submit', event => {
+      event.preventDefault();
+      const field = $('searchField').value;
+      const query = $('searchQuery').value.trim();
+      if (!query) return;
+      const result = bookList.search(field, query);
+      highlightMatches = new Set(result.matches.map(match => match.index));
+      highlightTraversed = new Set(result.traversed.map(item => item.index));
+      const banner = $('searchResultBanner');
+      banner.classList.remove('hidden');
+      if (result.matches.length) {
+        banner.className = 'rounded-lg p-3 text-sm border bg-emerald-50 border-emerald-200 text-emerald-800';
+        banner.textContent = `Found ${result.matches.length} match${result.matches.length === 1 ? '' : 'es'} after traversing ${result.traversed.length} node${result.traversed.length === 1 ? '' : 's'}.`;
+        addLog(`Search found ${result.matches.length} match${result.matches.length === 1 ? '' : 'es'} for "${query}" (${result.traversed.length} nodes traversed).`, 'success');
+        setLastOperation(`Found ${result.matches.length} match${result.matches.length === 1 ? '' : 'es'}`);
+      } else {
+        banner.className = 'rounded-lg p-3 text-sm border bg-amber-50 border-amber-200 text-amber-800';
+        banner.textContent = `No matches found. Traversed ${result.traversed.length} node${result.traversed.length === 1 ? '' : 's'}.`;
+        addLog(`Search returned no results for "${query}" (${result.traversed.length} nodes traversed).`);
+        setLastOperation('No Matches Found');
+      }
+      renderAll();
+    });
+
+    $('btnClearSearch').addEventListener('click', () => {
+      $('formSearch').reset();
+      $('searchResultBanner').classList.add('hidden');
+      highlightMatches = new Set();
+      highlightTraversed = new Set();
+      renderAll();
+    });
+
+    $('deleteMode').addEventListener('change', () => {
+      const mode = $('deleteMode').value;
+      const wrap = $('deleteValueWrap');
+      const label = $('deleteValueLabel');
+      const input = $('deleteValue');
+      if (mode === 'head' || mode === 'tail') {
+        wrap.classList.add('hidden');
+      } else {
+        wrap.classList.remove('hidden');
+        label.textContent = mode === 'index' ? 'Node Index to Delete' : 'Book ID to Delete';
+        input.placeholder = mode === 'index' ? 'e.g. 2' : 'e.g. 102';
+      }
+    });
+
+    $('formDelete').addEventListener('submit', event => {
+      event.preventDefault();
+      const mode = $('deleteMode').value;
+      let result;
+      if (mode === 'id') result = bookList.deleteById(Number($('deleteValue').value));
+      else if (mode === 'head') result = bookList.deleteHead();
+      else if (mode === 'tail') result = bookList.deleteTail();
+      else result = bookList.deleteAtIndex(Number($('deleteValue').value));
+
+      if (!result.ok) {
+        addLog(`Delete failed: ${result.error}`, 'error');
+        setLastOperation('Delete Failed');
+        showToast(result.error, 'rose');
+      } else {
+        highlightMatches = new Set();
+        highlightTraversed = new Set();
+        addLog(`Deleted #${result.node.id} "${result.node.title}" (${result.steps} pointer step${result.steps === 1 ? '' : 's'}).`, 'success');
+        setLastOperation(`Deleted #${result.node.id}`);
+        showToast(`Deleted #${result.node.id}`, 'emerald');
+      }
+      renderAll();
+    });
+
+    $('bookTableBody').addEventListener('click', event => {
+      const button = event.target.closest('[data-delete-id]');
+      if (!button) return;
+      const id = Number(button.dataset.deleteId);
+      const result = bookList.deleteById(id);
+      if (result.ok) {
+        addLog(`Deleted #${result.node.id} "${result.node.title}" via directory table.`, 'success');
+        setLastOperation(`Deleted #${result.node.id}`);
+        showToast(`Deleted #${result.node.id}`, 'emerald');
+        highlightMatches = new Set();
+        highlightTraversed = new Set();
+        renderAll();
+      }
+    });
+
+    $('btnResetSample').addEventListener('click', () => {
+      bookList.clear();
+      const sample = [
+        { id: 101, title: 'Introduction to Algorithms', author: 'Thomas H. Cormen', genre: 'Computer Science', year: 2009 },
+        { id: 102, title: 'The Pragmatic Programmer', author: 'Andrew Hunt', genre: 'Computer Science', year: 1999 },
+        { id: 103, title: 'A Brief History of Time', author: 'Stephen Hawking', genre: 'Science', year: 1988 },
+        { id: 104, title: 'Sapiens', author: 'Yuval Noah Harari', genre: 'History', year: 2011 }
+      ];
+      sample.forEach(book => bookList.insertAtTail(book));
+      highlightMatches = new Set();
+      highlightTraversed = new Set();
+      addLog('Loaded 4 sample book records at tail.', 'success');
+      setLastOperation('Loaded 4 Samples');
+      showToast('Sample books loaded', 'emerald');
+      renderAll();
+    });
+
+    $('btnClearList').addEventListener('click', () => $('confirmModal').classList.remove('hidden'));
+    $('btnCancelClear').addEventListener('click', () => $('confirmModal').classList.add('hidden'));
+    $('confirmModal').addEventListener('click', event => {
+      if (event.target === $('confirmModal')) $('confirmModal').classList.add('hidden');
+    });
+    $('btnConfirmClear').addEventListener('click', () => {
+      const count = bookList.size;
+      bookList.clear();
+      highlightMatches = new Set();
+      highlightTraversed = new Set();
+      $('confirmModal').classList.add('hidden');
+      addLog(`Cleared list containing ${count} node${count === 1 ? '' : 's'}; HEAD set to NULL.`, 'success');
+      setLastOperation('List Cleared');
+      showToast('Linked list cleared', 'emerald');
+      renderAll();
+    });
+
+    $('btnClearLog').addEventListener('click', () => {
+      logs = [];
+      renderLogs();
+    });
+
+    renderAll();
+  </script>
+</body>
+</html>
